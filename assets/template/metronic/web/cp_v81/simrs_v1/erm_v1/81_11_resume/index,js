@@ -1,0 +1,203 @@
+'use strict'
+
+var signaturePadPasien_11 = ''
+var validator_11 = ''
+
+var Erm11 = (function () {
+  let is_tab = $('[data-is_tab]').data('is_tab')
+
+  let handleForm11 = () => {
+    const form = document.getElementById('form_11')
+
+    validator_11 = FormValidation.formValidation(form, {
+      fields: {
+        notes_11_diagnosa_akhir: {
+          validators: {
+            notEmpty: {
+              message: 'Mohon isi diagnosa akhir'
+            }
+          }
+        },
+        terapi: {
+          validators: {
+            notEmpty: {
+              message: 'Mohon isi rekomendasi lanjutan / evaluasi terapi'
+            }
+          }
+        },
+        obat_terapi_pulang: {
+          validators: {
+            notEmpty: {
+              message: 'Mohon isi terapi obat Pulang'
+            }
+          }
+        },
+        // notes_11_ttd_pasien: {
+        //   validators: {
+        //     notEmpty: {
+        //       message: 'Mohon isi tanda tangan pasien'
+        //     }
+        //   }
+        // }
+      },
+
+      plugins: {
+        trigger: new FormValidation.plugins.Trigger(),
+        bootstrap: new FormValidation.plugins.Bootstrap5({
+          rowSelector: '.fv-row',
+          eleInvalidClass: '',
+          eleValidClass: ''
+        })
+      }
+    })
+
+    $('#form_11').on('submit', function (e) {
+      e.preventDefault()
+
+      // if (!signaturePadPasien_11.isEmpty()) {
+      //   $('input[name=notes_11_ttd_pasien]').val(
+      //     signaturePadPasien_11.toDataURL('image/png')
+      //   )
+      // }
+
+      if (validator_11) {
+        validator_11.validate().then(function (status) {
+          if (status == 'Valid') {
+            showOverlay('Proses menyimpan data . . .')
+
+            let data = $('#form_11').serialize()
+            let url = $('#form_11').attr('href')
+
+            $.ajax({
+              url: url,
+              type: 'POST',
+              dataType: 'JSON',
+              data,
+              success: data => {
+                hideOverlay()
+
+                $('#form_11')
+                  .find('#csrf_token_hash_11')
+                  .val(data.csrf_token_hash)
+
+                if ($('.nav-link.active').length > 0) {
+                  $('.nav-link.active').trigger('click')
+                } else {
+                  location.reload()
+                }
+              },
+              error: data => {
+                hideOverlay()
+
+                if (typeof data.responseJSON == 'undefined') {
+                  alert(`${data.status} - ${data.statusText}`)
+                } else {
+                  alert(data.responseJSON.message)
+
+                  $('#form_11')
+                    .find('#csrf_token_hash_11')
+                    .val(data.responseJSON.csrf_token_hash)
+                }
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+
+  let handleSignaturePad = () => {
+    signaturePadPasien_11 = new SignaturePad(
+      document.getElementById('notes_11_ttd_pasien'),
+      {
+        penColor: '#000000'
+      }
+    )
+
+    $('#clear_notes_11_ttd_pasien').click(function (e) {
+      e.preventDefault()
+
+      signaturePadPasien_11.clear()
+      $('input[name=notes_11_ttd_pasien]').val('')
+    })
+
+    $('#undo_notes_11_ttd_pasien').click(function (e) {
+      e.preventDefault()
+
+      var data_signature_pad = signaturePadPasien_11.toData()
+      if (data_signature_pad) {
+        data_signature_pad.pop()
+        signaturePadPasien_11.fromData(data_signature_pad)
+      }
+    })
+
+    signaturePadPasien_11.fromDataURL(
+      $('input[name=notes_11_ttd_pasien]').val()
+    )
+  }
+
+
+  let handleDelete11 = () => {
+    $('#delete_11').click(function (e) {
+      e.preventDefault()
+
+      let url = $(this).attr('href')
+      let csrf_name = $('#csrf_token_hash_11').attr('name')
+      let csrf_token = $('#csrf_token_hash_11').val()
+
+      let conf = confirm('Apakah anda yakin akan menghapus berkas ini ?')
+
+      if (!conf) {
+        return false
+      }
+
+      showOverlay('Proses menghapus berkas . . .')
+
+      $.ajax({
+        url: url,
+        type: 'POST',
+        dataType: 'JSON',
+        data: {
+          [csrf_name]: csrf_token
+        },
+        success: data => {
+          hideOverlay()
+
+          if ($('.nav-link.active').length > 0) {
+            $('.nav-link.active').trigger('click')
+          } else {
+            location.reload()
+          }
+        },
+        error: data => {
+          hideOverlay()
+
+          if (typeof data.responseJSON == 'undefined') {
+            alert(`${data.status} - ${data.statusText}`)
+          } else {
+            alert(data.responseJSON.message)
+
+            $('#form_11')
+              .find('#csrf_token_hash_11')
+              .val(data.responseJSON.csrf_token_hash)
+          }
+        }
+      })
+    })
+  }
+
+  return {
+    init: () => {
+      handleForm11(),
+        // handleSignaturePad(),
+        handleDelete11()
+    }
+  }
+})()
+
+jQuery(document).ready(function () {
+  Erm11.init()
+  KTApp.init()
+  $('#erm_131 .label_id_visit:first').trigger('click')
+  $('#erm_131 input[name="id_visit"]:first').trigger('click')
+})
